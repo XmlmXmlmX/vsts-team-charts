@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Hello Analytics Reporting API V4</title>
+  <meta name="google-signin-client_id" content="52387316312-ttr99vd84h718pvqnn1h0cqi7jvmt11s.apps.googleusercontent.com">
+  <meta name="google-signin-scope" content="https://www.googleapis.com/auth/analytics.readonly">
+  <script src="sdk/scripts/VSS.SDK.min.js"></script>
+  <script src="scripts/pie-chart.js"></script>
+  <script type="text/javascript">
+    function getCustomSettings() {
+      var showResults = [];
+      var customSettings = {
+        data: JSON.stringify({
+          viewId: $("#google-analytics-viewId input").val()
+        })
+      };
+      return customSettings;
+    }
+
+    VSS.init({
+      explicitNotifyLoaded: true,
+      usePlatformStyles: true
+    });
+
+    VSS.require("TFS/Dashboards/WidgetHelpers", function (WidgetHelpers) {
+      WidgetHelpers.IncludeWidgetStyles();
+      WidgetHelpers.IncludeWidgetConfigurationStyles();
+
+      VSS.register("TeamChartsWidget", function () {
+        var $googleAnalyticsViewId = $("#google-analytics-viewId input");
+
+        return {
+          load: function (widgetSettings, widgetConfigurationContext) {
+            var $title = $('h2.title');
+            var settings = JSON.parse(widgetSettings.customSettings.data);
+
+            if (settings && settings.viewId) {
+              $googleAnalyticsViewId.val(settings.viewId); //'131107544';
+            }
+
+            $googleAnalyticsViewId.on("input", function () {
+              if (validateNameTextInput($nameInput, $errorSingleLineInput)) {
+                widgetConfigurationContext.notify(WidgetHelpers.WidgetEvent.ConfigurationChange, WidgetHelpers.WidgetEvent.Args(getCustomSettings()));
+              }
+            });
+
+            $title.text(widgetSettings.name);
+
+            var callback = function (response) {
+              var formattedJson = JSON.stringify(response.result, null, 2);
+              //var clientId;
+              //var data = teamCharts.googleAnalytics.init(clientId);
+
+              teamCharts.pieChart.init('#Chart-Container', formattedJson);
+
+              return WidgetHelpers.WidgetStatusHelper.Success();
+            };
+
+            queryReports(callback, settings.viewId);
+          },
+          onSave: function () {
+            var customSettings = {
+              data: JSON.stringify({
+                name: $queryDropdown.val()
+              })
+            };
+            return WidgetHelpers.WidgetConfigurationSave.Valid(getCustomSettings());
+          },
+          reload: function (widgetSettings) {
+            var $title = $('h2.title');
+
+            $title.text(widgetSettings.name);
+
+            return WidgetHelpers.WidgetStatusHelper.Success();
+          }
+        }
+      });
+      VSS.notifyLoadSucceeded();
+    });
+
+    function queryReports(callback, viewId) {
+      gapi.client.request({
+        path: '/v4/reports:batchGet',
+        root: 'https://analyticsreporting.googleapis.com/',
+        method: 'POST',
+        body: {
+          reportRequests: [
+            {
+              "viewId": viewId,
+              "dateRanges": [
+                { "endDate": "2017-11-01", "startDate": "2017-01-01" }
+              ],
+              "metrics": [
+                { "expression": "ga:pageviews" },
+                { "expression": "ga:sessions" }
+              ],
+              "dimensions": [{ "name": "ga:browser" }, { "name": "ga:country" }],
+              "dimensionFilterClauses": [
+                {
+                  "filters": [
+                    {
+                      "dimensionName": "ga:browser",
+                      "operator": "EXACT",
+                      "expressions": ["Chrome"]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }).then(callback, console.error.bind(console));
+    }
+  </script>
+</head>
+
+<body>
+  <div class="widget">
+    <h2 class="title"></h2>
+    <p class="g-signin2" data-onsuccess="queryReports"></p>
+    <div id="Chart-Container"></div>
+  </div>
+  <div class="widget-configuration">
+
+    <div class="single-line-text-input" id="google-analytics-viewId">
+      <label>Google Analytics View ID</label>
+      <input type="text" value="131107544" placeholder="6546574"></input>
+    </div>
+    <!--
+    <div class="dropdown" id="query-path-dropdown">
+      <label>Drop down</label>
+      <div class="wrapper">
+        <select>
+          <option value="Shared Queries/Feedback">Shared Queries/Feedback</option>
+          <option value="Shared Queries/My Bugs">Shared Queries/My Bugs</option>
+          <option value="Shared Queries/My Tasks">Shared Queries/My Tasks</option>
+        </select>
+      </div>
+
+      <fieldset class="checkbox" id="select-results">
+        <legend>Select results to display</legend>
+        <input type="checkbox" id="check-option1" value="id" name="check" checked="true">
+        <label for="check-option1">Query ID</label>
+        <br/>
+        <input type="checkbox" id="check-option2" value="name" name="check" checked="true">
+        <label for="check-option2">Query Name</label>
+        <br/>
+        <input type="checkbox" id="check-option3" value="createdBy" name="check" checked="true">
+        <label for="check-option3">Created By</label>
+        <br/>
+      </fieldset>
+
+      <fieldset class="radio" id="display-options">
+        <legend>Display as </legend>
+        <input type="radio" id="radio-option1" value="ordered" name="radio" checked="true">
+        <label for="radio-option1">Ordered List</label>
+        <br/>
+        <input type="radio" id="radio-option2" value="unordered" name="radio">
+        <label for="radio-option2">Unordered List</label>
+        <br/>
+      </fieldset>
+
+      <div class="multi-line-text-input">
+        <label>Comments</label>
+        <textarea></textarea>
+      </div>
+    </div>-->
+  </div>
+  <script src="https://apis.google.com/js/client:platform.js"></script>
+</body>
+
+</html>

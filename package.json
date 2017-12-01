@@ -1,0 +1,11 @@
+{
+  "name": "vsts-extensions-team-charts",
+  "private": true,
+  "version": "1.0.0",
+  "devDependencies": {
+    "vss-web-extension-sdk": "^4.125.2"
+  },
+  "scripts": {
+    "copy": "copy ./node_modules/vss-web-extension-sdk/lib/VSS.SDK*.js ./sdk/scripts"
+  }
+}
